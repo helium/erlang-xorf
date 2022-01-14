@@ -1,0 +1,16 @@
+[package]
+name = "xorf"
+version = "0.0.1"
+authors = [ "Marc Nijdam <marc@helium.com>" ]
+license = "Apache-2.0"
+edition = "2021"
+build = "native/build.rs"
+
+[lib]
+name = "xorf"
+crate-type = ["dylib"]
+path = "native/lib.rs"
+
+[dependencies]
+rustler = "0.23.0"
+xorf = "0.8"
