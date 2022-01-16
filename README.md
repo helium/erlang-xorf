@@ -22,7 +22,7 @@ cause undefined behavior.
 
 ## Installation
 
-[Available on hex.pm!](https://hex.pm/packages/xorf).
+Install from [hex.pm](https://hex.pm/packages/xorf).
 
 For rebar3:
 
