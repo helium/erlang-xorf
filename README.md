@@ -1,7 +1,7 @@
 # erlang-xorf <!-- omit in toc -->
 
 [![ci](https://github.com/helium/erlang-xorf/actions/workflows/erlang.yml/badge.svg)](https://github.com/helium/erlang-xorf/actions/workflows/erlang.yml)
-[![codecov](https://codecov.io/gh/helium/erlang-xorf/branch/master/graph/badge.svg?token=h7C8KMXO8K)](https://codecov.io/gh/helium/erlang-xorf)
+[![codecov](https://codecov.io/gh/helium/erlang-xorf/branch/main/graph/badge.svg?token=PHV5HEFNRT)](https://codecov.io/gh/helium/erlang-xorf)
 [![hex.pm](https://img.shields.io/hexpm/v/erlang-xorf)](https://hex.pm/packages/erlang-xorf)
 
 This library is a NIF wrapper for the [xorf](https://crates.io/crates/xorf).
