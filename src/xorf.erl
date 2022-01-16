@@ -3,8 +3,8 @@
 -type filter_size() :: 8 | 16 | 32.
 -type filter_entry() :: non_neg_integer().
 -type filter_type() :: {binary_fuse, filter_size()}.
--type hash_function() :: default_hash | none | fun((any()) -> filter_entry()).
--type filter() :: {filter_type(), xorf_nif:filter()}.
+-type hash_function() :: fun((any()) -> filter_entry()).
+-type filter() :: xorf_nif:filter().
 
 -eport_types([
     filter_type/0,
@@ -43,7 +43,7 @@ to_bin(Filter) ->
 from_bin({binary_fuse, Size}, Binary) ->
     xorf_nif:bf_from_bin(Size, Binary).
 
--spec contains(filter(), filter_entry(), hash_function()) -> boolean().
+-spec contains(Filter :: filter(), Key :: any(), HashFunction :: hash_function()) -> boolean().
 contains(Filter, Key, HashFunction) ->
     xorf_nif:bf_contains(Filter, HashFunction(Key)).
 
