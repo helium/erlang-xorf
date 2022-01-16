@@ -2,43 +2,43 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ master ]
+    branches: [main]
   pull_request:
-    branches: [ master ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: clippy, rustfmt
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
 
-    - name: Check Rust formatting
-      run: cargo fmt -- --check
+      - name: Check Rust formatting
+        run: cargo fmt -- --check
 
-    - name: Lint Rust
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint Rust
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build
-      run: make
+      - name: Build
+        run: make
 
-    - name: Typecheck Erlang
-      run: make typecheck
+      - name: Typecheck Erlang
+        run: make typecheck
 
-    - name: Test Erlang
-      run: make test
+      - name: Test Erlang
+        run: make test
 
-    - name: Generate coverage report
-      run: make cover
+      - name: Generate coverage report
+        run: make cover
 
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./_build/test/covertool/multihash.covertool.xml
-        flags: unittests
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./_build/test/covertool/xorf.covertool.xml
+          flags: unittests
