@@ -9,10 +9,10 @@ mod res;
 rustler::atoms! {
     ok,
     serialize,
-    invalid_xor_construction,
+    init,
 }
 
-#[rustler::nif(name = "bf_new")]
+#[rustler::nif(name = "bf_new", schedule = "DirtyCpu")]
 pub fn bf_new(size: u8, keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<XorRes>)> {
     match size {
         8 => BinaryFuse8::try_from(keys).map(XorRes::BF8),
@@ -20,11 +20,11 @@ pub fn bf_new(size: u8, keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<XorRes>)
         32 => BinaryFuse32::try_from(keys).map(XorRes::BF32),
         _ => return Err(Error::BadArg),
     }
-    .map_err(|msg| Error::Term(Box::new(msg)))
+    .map_err(|_| Error::Term(Box::new(init())))
     .map(|filter| (ok(), ResourceArc::new(filter)))
 }
 
-#[rustler::nif(name = "xor_new")]
+#[rustler::nif(name = "xor_new", schedule = "DirtyCpu")]
 pub fn xor_new(size: u8, keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<XorRes>)> {
     match size {
         8 => Xor8::try_from(keys).map(XorRes::X8),
@@ -32,16 +32,37 @@ pub fn xor_new(size: u8, keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<XorRes>
         32 => Xor32::try_from(keys).map(XorRes::X32),
         _ => return Err(Error::BadArg),
     }
-    // NOTE: msg here is reported Infallible, hence constructing an error by hand
-    .map_err(|_msg| Error::Term(Box::new(invalid_xor_construction())))
+    .map_err(|_| Error::Term(Box::new(init())))
     .map(|filter| (ok(), ResourceArc::new(filter)))
 }
 
-fn serialize_err(err: bincode::Error) -> rustler::Error {
-    Error::Term(Box::new((serialize(), err.to_string())))
+#[rustler::nif(name = "bf_from_bin", schedule = "DirtyCpu")]
+pub fn bf_from_bin(size: u8, bin: Binary) -> NifResult<(Atom, ResourceArc<XorRes>)> {
+    let bytes = bin.as_slice();
+    match size {
+        8 => bincode::deserialize::<BinaryFuse8>(bytes).map(XorRes::BF8),
+        16 => bincode::deserialize::<BinaryFuse16>(bytes).map(XorRes::BF16),
+        32 => bincode::deserialize::<BinaryFuse32>(bytes).map(XorRes::BF32),
+        _ => return Err(Error::BadArg),
+    }
+    .map_err(serialize_err)
+    .map(|filter| (ok(), ResourceArc::new(filter)))
 }
 
-#[rustler::nif(name = "to_bin")]
+#[rustler::nif(name = "xor_from_bin", schedule = "DirtyCpu")]
+pub fn xor_from_bin(size: u8, bin: Binary) -> NifResult<(Atom, ResourceArc<XorRes>)> {
+    let bytes = bin.as_slice();
+    match size {
+        8 => bincode::deserialize::<Xor8>(bytes).map(XorRes::X8),
+        16 => bincode::deserialize::<Xor16>(bytes).map(XorRes::X16),
+        32 => bincode::deserialize::<Xor32>(bytes).map(XorRes::X32),
+        _ => return Err(Error::BadArg),
+    }
+    .map_err(serialize_err)
+    .map(|filter| (ok(), ResourceArc::new(filter)))
+}
+
+#[rustler::nif(name = "to_bin", schedule = "DirtyCpu")]
 pub fn to_bin(env: Env, filter: ResourceArc<XorRes>) -> NifResult<(Atom, Binary)> {
     let mut data = filter
         .serialized_size()
@@ -56,35 +77,13 @@ pub fn to_bin(env: Env, filter: ResourceArc<XorRes>) -> NifResult<(Atom, Binary)
     Ok((ok(), Binary::from_owned(data, env)))
 }
 
-#[rustler::nif(name = "bf_from_bin")]
-pub fn bf_from_bin(size: u8, bin: Binary) -> NifResult<(Atom, ResourceArc<XorRes>)> {
-    let bytes = bin.as_slice();
-    match size {
-        8 => bincode::deserialize::<BinaryFuse8>(bytes).map(XorRes::BF8),
-        16 => bincode::deserialize::<BinaryFuse16>(bytes).map(XorRes::BF16),
-        32 => bincode::deserialize::<BinaryFuse32>(bytes).map(XorRes::BF32),
-        _ => return Err(Error::BadArg),
-    }
-    .map_err(serialize_err)
-    .map(|filter| (ok(), ResourceArc::new(filter)))
-}
-
-#[rustler::nif(name = "xor_from_bin")]
-pub fn xor_from_bin(size: u8, bin: Binary) -> NifResult<(Atom, ResourceArc<XorRes>)> {
-    let bytes = bin.as_slice();
-    match size {
-        8 => bincode::deserialize::<Xor8>(bytes).map(XorRes::X8),
-        16 => bincode::deserialize::<Xor16>(bytes).map(XorRes::X16),
-        32 => bincode::deserialize::<Xor32>(bytes).map(XorRes::X32),
-        _ => return Err(Error::BadArg),
-    }
-    .map_err(serialize_err)
-    .map(|filter| (ok(), ResourceArc::new(filter)))
-}
-
 #[rustler::nif(name = "contains")]
 pub fn contains(filter: ResourceArc<XorRes>, key: u64) -> bool {
     filter.deref().contains(&key)
+}
+
+fn serialize_err(err: bincode::Error) -> rustler::Error {
+    Error::Term(Box::new((serialize(), err.to_string())))
 }
 
 pub fn on_load(env: Env, _load_info: Term) -> bool {
