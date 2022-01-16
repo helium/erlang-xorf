@@ -13,7 +13,7 @@
 %% limitations under the License.
 
 {application, xorf, [
-    {description, "An Erlangng implementation of xor filters and their derivatives"},
+    {description, "An Erlang library for xor filters and their derivatives"},
     {vsn, "git"},
     {registered, []},
     {applications, [kernel, stdlib]},
