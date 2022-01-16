@@ -55,8 +55,8 @@ For an xor filter:
 
 ```erlang
 {ok, Filter} = xorf:new({exor, 8}, [1, 2, 3]),
-true   = xorf:contain(Filter, 1),
-false  = xorf:contain(Filter, 5),
+true   = xorf:contains(Filter, 1),
+false  = xorf:contains(Filter, 5),
 ```
 
 Note that the number of bits per entry implies the likelihood of false positives
@@ -66,8 +66,8 @@ For a binary fuse:
 
 ```erlang
 {ok, Filter} = xorf:new({binary_fuse, 8}, [1, 2, 3]),
-true   = xorf:contain(Filter, 1),
-false  = xorf:contain(Filter, 5),
+true   = xorf:contains(Filter, 1),
+false  = xorf:contains(Filter, 5),
 ```
 
 ## Serialization
@@ -79,6 +79,6 @@ For example, given a binary for an 8 bit binary fuse:
 ```erlang
 {ok, Bin} = xorf:to_bin(Filter),
 {ok, DFilter} = xorf:from_bin({binary_fuse, 8}, Bin),
-true   = xorf:contain(DFilter, 1),
-false  = xorf:contain(DFilter, 5),
+true   = xorf:contains(DFilter, 1),
+false  = xorf:contains(DFilter, 5),
 ```
