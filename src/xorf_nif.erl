@@ -1,62 +1,36 @@
 -module(xorf_nif).
 
--export(
-   [bf8_new/1,
-    bf8_to_bin/1,
-    bf8_from_bin/1,
-    bf8_contains/2,
-    bf16_new/1,
-    bf16_to_bin/1,
-    bf16_from_bin/1,
-    bf16_contains/2,
-    bf32_new/1,
-    bf32_to_bin/1,
-    bf32_from_bin/1,
-    bf32_contains/2
-   ]).
+-export([
+    bf_new/2,
+    bf_to_bin/1,
+    bf_from_bin/2,
+    bf_contains/2
+]).
 
 %% Native library support
 -export([load/0]).
 -on_load(load/0).
 
--spec bf8_new(Keys :: [non_neg_integer()]) -> {ok, reference()} | {error, any()}.
-bf8_new(_Keys) ->
-    not_loaded(?LINE).
--spec bf16_new(Keys :: [non_neg_integer()]) -> {ok, reference()} | {error, any()}.
-bf16_new(_Keys) ->
-    not_loaded(?LINE).
--spec bf32_new(Keys :: [non_neg_integer()]) -> {ok, reference()} | {error, any()}.
-bf32_new(_Keys) ->
+-type filter_size() :: xorf:filter_size().
+-type filter_entry() :: xorf:filter_entry().
+-type filter() :: reference().
+
+-export_type([filter/0]).
+
+-spec bf_new(Size :: filter_size(), Keys :: [filter_entry]) -> {ok, filter()} | {error, any()}.
+bf_new(_Size, _Keys) ->
     not_loaded(?LINE).
 
--spec bf8_to_bin(FilterRef :: reference()) -> {ok, binary()} | {error, any()}.
-bf8_to_bin(_FilterRef) ->
-    not_loaded(?LINE).
--spec bf16_to_bin(FilterRef :: reference()) -> {ok, binary()} | {error, any()}.
-bf16_to_bin(_FilterRef) ->
-    not_loaded(?LINE).
--spec bf32_to_bin(FilterRef :: reference()) -> {ok, binary()} | {error, any()}.
-bf32_to_bin(_FilterRef) ->
+-spec bf_to_bin(Filter :: filter()) -> {ok, binary()} | {error, any()}.
+bf_to_bin(_Filter) ->
     not_loaded(?LINE).
 
--spec bf8_from_bin(Binary :: binary()) -> {ok, reference()} | {error, any()}.
-bf8_from_bin(_Binary) ->
-    not_loaded(?LINE).
--spec bf16_from_bin(Binary :: binary()) -> {ok, reference()} | {error, any()}.
-bf16_from_bin(_Binary) ->
-    not_loaded(?LINE).
--spec bf32_from_bin(Binary :: binary()) -> {ok, reference()} | {error, any()}.
-bf32_from_bin(_Binary) ->
+-spec bf_from_bin(Size :: filter_size(), Binary :: binary()) -> {ok, filter()} | {error, any()}.
+bf_from_bin(_Size, _Binary) ->
     not_loaded(?LINE).
 
--spec bf8_contains(FilterRef :: reference(), Key :: any()) -> boolean() | {error, any()}.
-bf8_contains(_FilterRef, _Key) ->
-    not_loaded(?LINE).
--spec bf16_contains(FilterRef :: reference(), Key :: any()) -> boolean() | {error, any()}.
-bf16_contains(_FilterRef, _Key) ->
-    not_loaded(?LINE).
--spec bf32_contains(FilterRef :: reference(), Key :: any()) -> boolean() | {error, any()}.
-bf32_contains(_FilterRef, _Key) ->
+-spec bf_contains(Filter :: filter(), Key :: filter_entry()) -> boolean().
+bf_contains(_Filter, _Key) ->
     not_loaded(?LINE).
 
 %% @private

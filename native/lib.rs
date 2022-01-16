@@ -1,108 +1,72 @@
-use bin::Bin;
-use res::{BF16Res, BF32Res, BF8Res};
-use rustler::{Atom, Env, NifResult, ResourceArc, Term};
+// use bin::Bin;
+use res::BFRes;
+use rustler::{Atom, Binary, Env, Error, NifResult, OwnedBinary, ResourceArc, Term};
+use std::ops::Deref;
 use xorf::{BinaryFuse16, BinaryFuse32, BinaryFuse8, Filter};
 
-mod bin;
 mod res;
 
 rustler::atoms! {
     ok,
-    error,
-    invalid_code,
+    serialize,
 }
 
-#[rustler::nif(name = "bf8_new")]
-pub fn bf8_new(keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<BF8Res>)> {
-    let filter = BinaryFuse8::try_from(keys).expect("Error creating filter!");
-    Ok((ok(), ResourceArc::new(BF8Res::from(filter))))
+#[rustler::nif(name = "bf_new")]
+pub fn bf_new(size: u8, keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<BFRes>)> {
+    match size {
+        8 => BinaryFuse8::try_from(keys).map(BFRes::BF8),
+        16 => BinaryFuse16::try_from(keys).map(BFRes::BF16),
+        32 => BinaryFuse32::try_from(keys).map(BFRes::BF32),
+        _ => return Err(Error::BadArg),
+    }
+    .map_err(|msg| Error::Term(Box::new(msg)))
+    .map(|filter| (ok(), ResourceArc::new(filter)))
 }
 
-#[rustler::nif(name = "bf16_new")]
-pub fn bf16_new(keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<BF16Res>)> {
-    let filter = BinaryFuse16::try_from(keys).expect("Error creating filter!");
-    Ok((ok(), ResourceArc::new(BF16Res::from(filter))))
+fn serialize_err(err: bincode::Error) -> rustler::Error {
+    Error::Term(Box::new((serialize(), err.to_string())))
 }
 
-#[rustler::nif(name = "bf32_new")]
-pub fn bf32_new(keys: Vec<u64>) -> NifResult<(Atom, ResourceArc<BF32Res>)> {
-    let filter = BinaryFuse32::try_from(keys).expect("Error creating filter!");
-    Ok((ok(), ResourceArc::new(BF32Res::from(filter))))
+#[rustler::nif(name = "bf_to_bin")]
+pub fn bf_to_bin(env: Env, filter: ResourceArc<BFRes>) -> NifResult<(Atom, Binary)> {
+    let mut data = filter
+        .serialized_size()
+        .map_err(serialize_err)
+        .map(OwnedBinary::new)?
+        .unwrap();
+
+    filter
+        .serialize_into(data.as_mut_slice())
+        .map_err(serialize_err)?;
+
+    Ok((ok(), Binary::from_owned(data, env)))
 }
 
-#[rustler::nif(name = "bf8_to_bin")]
-pub fn bf8_to_bin(filterarc: ResourceArc<BF8Res>) -> NifResult<(Atom, Bin)> {
-    let bytes = bincode::serialize(&filterarc.0).expect("Unable to serialize!");
-    Ok((ok(), Bin(bytes)))
+#[rustler::nif(name = "bf_from_bin")]
+pub fn bf_from_bin(size: u8, bin: Binary) -> NifResult<(Atom, ResourceArc<BFRes>)> {
+    let bytes = bin.as_slice();
+    match size {
+        8 => bincode::deserialize::<BinaryFuse8>(bytes).map(BFRes::BF8),
+        16 => bincode::deserialize::<BinaryFuse16>(bytes).map(BFRes::BF16),
+        32 => bincode::deserialize::<BinaryFuse32>(bytes).map(BFRes::BF32),
+        _ => return Err(Error::BadArg),
+    }
+    .map_err(serialize_err)
+    .map(|filter| (ok(), ResourceArc::new(filter)))
 }
 
-#[rustler::nif(name = "bf16_to_bin")]
-pub fn bf16_to_bin(filterarc: ResourceArc<BF16Res>) -> NifResult<(Atom, Bin)> {
-    let bytes = bincode::serialize(&filterarc.0).expect("Unable to serialize!");
-    Ok((ok(), Bin(bytes)))
-}
-
-#[rustler::nif(name = "bf32_to_bin")]
-pub fn bf32_to_bin(filterarc: ResourceArc<BF32Res>) -> NifResult<(Atom, Bin)> {
-    let bytes = bincode::serialize(&filterarc.0).expect("Unable to serialize!");
-    Ok((ok(), Bin(bytes)))
-}
-
-#[rustler::nif(name = "bf8_from_bin")]
-pub fn bf8_from_bin(bin: Bin) -> NifResult<(Atom, ResourceArc<BF8Res>)> {
-    let filter: BinaryFuse8 = bincode::deserialize(&bin.0).expect("Unable to deserialize!");
-    Ok((ok(), ResourceArc::new(BF8Res::from(filter))))
-}
-
-#[rustler::nif(name = "bf16_from_bin")]
-pub fn bf16_from_bin(bin: Bin) -> NifResult<(Atom, ResourceArc<BF16Res>)> {
-    let filter: BinaryFuse16 = bincode::deserialize(&bin.0).expect("Unable to deserialize!");
-    Ok((ok(), ResourceArc::new(BF16Res::from(filter))))
-}
-
-#[rustler::nif(name = "bf32_from_bin")]
-pub fn bf32_from_bin(bin: Bin) -> NifResult<(Atom, ResourceArc<BF32Res>)> {
-    let filter: BinaryFuse32 = bincode::deserialize(&bin.0).expect("Unable to deserialize!");
-    Ok((ok(), ResourceArc::new(BF32Res::from(filter))))
-}
-
-#[rustler::nif(name = "bf8_contains")]
-pub fn bf8_contains(filterarc: ResourceArc<BF8Res>, key: u64) -> bool {
-    filterarc.0.contains(&key)
-}
-
-#[rustler::nif(name = "bf16_contains")]
-pub fn bf16_contains(filterarc: ResourceArc<BF16Res>, key: u64) -> bool {
-    filterarc.0.contains(&key)
-}
-
-#[rustler::nif(name = "bf32_contains")]
-pub fn bf32_contains(filterarc: ResourceArc<BF32Res>, key: u64) -> bool {
-    filterarc.0.contains(&key)
+#[rustler::nif(name = "bf_contains")]
+pub fn bf_contains(filter: ResourceArc<BFRes>, key: u64) -> bool {
+    filter.deref().contains(&key)
 }
 
 pub fn on_load(env: Env, _load_info: Term) -> bool {
-    rustler::resource!(BF8Res, env);
-    rustler::resource!(BF16Res, env);
-    rustler::resource!(BF32Res, env);
+    rustler::resource!(BFRes, env);
     true
 }
 
 rustler::init!(
     "xorf_nif",
-    [
-        bf8_new,
-        bf8_to_bin,
-        bf8_from_bin,
-        bf8_contains,
-        bf16_new,
-        bf16_to_bin,
-        bf16_from_bin,
-        bf16_contains,
-        bf32_new,
-        bf32_to_bin,
-        bf32_from_bin,
-        bf32_contains
-    ],
+    [bf_new, bf_contains, bf_to_bin, bf_from_bin],
     load = on_load
 );

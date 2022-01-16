@@ -1,49 +1,52 @@
 -module(xorf).
 
--type filter_type() :: {binary_fuse, 8 | 16 | 32}.
--type hash_function() :: default_hash | none | fun((any()) -> non_neg_integer()).
--type filter() :: {filter_type(), reference()}.
--type filterbin() :: {filter_type(), binary()}.
+-type filter_size() :: 8 | 16 | 32.
+-type filter_entry() :: non_neg_integer().
+-type filter_type() :: {binary_fuse, filter_size()}.
+-type hash_function() :: default_hash | none | fun((any()) -> filter_entry()).
+-type filter() :: {filter_type(), xorf_nif:filter()}.
 
--eport_types([filter_type/0, hash_function/0]).
+-eport_types([
+    filter_type/0,
+    filter_size/0,
+    filter_entry/0,
+    filter/0,
+    hash_function/0
+]).
 
--export([new/3, to_bin/1, from_bin/1, contains/2]).
+-export([
+    new/2, new/3,
+    to_bin/1,
+    from_bin/2,
+    contains/2, contains/3
+]).
 
--spec new(FilterType :: filter_type(),
-          Entries :: [non_neg_integer()],
-          HashFunction :: hash_function()) -> {ok, reference()} | {error, any()}.
-new(FilterType, Entries, HashFunction) ->
-    Keys = lists:map(HashFunction, Entries),
-    new(FilterType, Keys).
+-spec new(
+    FilterType :: filter_type(),
+    Entries :: [non_neg_integer()],
+    HashFunction :: hash_function()
+) -> {ok, reference()} | {error, any()}.
+new(FilterType, Keys, HashFunction) ->
+    Entries = lists:map(HashFunction, Keys),
+    new(FilterType, Entries).
 
--spec new(FilterType :: filter_type(), Keys :: [non_neg_integer()]) -> {ok, reference()} | {error, any()}.
-new({binary_fuse, 8}, Keys) ->
-    xorf_nif:bf8_new(Keys);
-new({binary_fuse, 16}, Keys) ->
-    xorf_nif:bf16_new(Keys);
-new({binary_fuse, 32}, Keys) ->
-    xorf_nif:bf32_new(Keys).
+-spec new(FilterType :: filter_type(), Entries :: [filter_entry()]) ->
+    {ok, filter()} | {error, any()}.
+new({binary_fuse, Size}, Keys) ->
+    xorf_nif:bf_new(Size, Keys).
 
--spec to_bin(Filter :: filter()) -> {ok, binary()}.
-to_bin({{binary_fuse, 8}, FilterRef}) ->
-    xorf_nif:bf8_to_bin(FilterRef);
-to_bin({{binary_fuse, 16}, FilterRef}) ->
-    xorf_nif:bf16_to_bin(FilterRef);
-to_bin({{binary_fuse, 32}, FilterRef}) ->
-    xorf_nif:bf32_to_bin(FilterRef).
+-spec to_bin(Filter :: filter()) -> {ok, binary()} | {error, any()}.
+to_bin(Filter) ->
+    xorf_nif:bf_to_bin(Filter).
 
--spec from_bin(FilterBin :: filterbin()) -> {ok, reference()}.
-from_bin({{binary_fuse, 8}, Binary}) ->
-    xorf_nif:bf8_from_bin(Binary);
-from_bin({{binary_fuse, 16}, Binary}) ->
-    xorf_nif:bf16_from_bin(Binary);
-from_bin({{binary_fuse, 32}, Binary}) ->
-    xorf_nif:bf32_from_bin(Binary).
+-spec from_bin(Type :: filter_type(), Binary :: binary()) -> {ok, filter()} | {error, any()}.
+from_bin({binary_fuse, Size}, Binary) ->
+    xorf_nif:bf_from_bin(Size, Binary).
 
- -spec contains(filter(), any()) -> boolean().
-contains({{binary_fuse, 8}, Filter}, Key) ->
-    xorf_nif:bf8_contains(Filter, Key);
-contains({{binary_fuse, 16}, Filter}, Key) ->
-    xorf_nif:bf16_contains(Filter, Key);
-contains({{binary_fuse, 32}, Filter}, Key) ->
-    xorf_nif:bf32_contains(Filter, Key).
+-spec contains(filter(), filter_entry(), hash_function()) -> boolean().
+contains(Filter, Key, HashFunction) ->
+    xorf_nif:bf_contains(Filter, HashFunction(Key)).
+
+-spec contains(filter(), filter_entry()) -> boolean().
+contains(Filter, Key) ->
+    xorf_nif:bf_contains(Filter, Key).
