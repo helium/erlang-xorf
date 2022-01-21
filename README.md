@@ -4,7 +4,8 @@
 [![codecov](https://codecov.io/gh/helium/erlang-xorf/branch/main/graph/badge.svg?token=PHV5HEFNRT)](https://codecov.io/gh/helium/erlang-xorf)
 [![hex.pm](https://img.shields.io/hexpm/v/erlang-xorf)](https://hex.pm/packages/erlang-xorf)
 
-This library is a NIF wrapper for the [xorf](https://crates.io/crates/xorf).
+This library is a NIF wrapper for the [xorf](https://crates.io/crates/xorf)
+family of xor filters.
 
 Both binary fuses and xor filters are suported in 8 16, and 32 bits per entry.
 
